@@ -1,29 +1,28 @@
-
 import TreePackage.*;
 import java.io.*;
 import java.util.*;
 
-
-    
 public class Identifiers
 {
-
     public static void main(String args[])
     {
-
-
         String fileName = getFileName();
         System.out.println();
         
         BinarySearchTree<String> unique = getPossibleIds(fileName);
         
-        // ADD CODE HERE FOR PRINTING THE IDENTIFIERS
+        Iterator<String> iter = unique.getInorderIterator();
+        while (iter.hasNext())
+        {
+            System.out.print(iter.next() + " ");
+        }
+        System.out.println();
     }
    
     /**
      * Get the possible identifiers from the file.
      *
-     * @return    A tree of possible identifiers from the file.
+     * @return A tree of possible identifiers from the file.
      */
     private static BinarySearchTree<String> getPossibleIds(String theFileName)
     {
@@ -33,9 +32,29 @@ public class Identifiers
         
         try
         {
-            input = new Scanner(new File(theFileName ) );
+            input = new Scanner(new File(theFileName));
 
-            //ADD CODE TO READ THE FILE AND CONSTRUCT THE BINARY SEARCH TREE
+            while (input.hasNextLine())
+            {
+                inString = input.nextLine();
+
+                StringTokenizer tokens = new StringTokenizer(
+                    inString,
+                    " \t\n\r\f+-*/;=()[],.<>:\"'!@#{}"
+                );
+
+                while (tokens.hasMoreTokens())
+                {
+                    String token = tokens.nextToken();
+
+                    if (token.length() > 0)
+                    {
+                        possible.add(token);
+                    }
+                }
+            }
+
+            input.close();
         }
         catch(IOException e)
         {
@@ -44,7 +63,6 @@ public class Identifiers
         }
             
         return possible;
-                                    
     }
        
     private static String getFileName()
@@ -67,6 +85,5 @@ public class Identifiers
         }
             
         return inString;
-                                    
     }
 }

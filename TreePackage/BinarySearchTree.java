@@ -1,4 +1,3 @@
-
 package TreePackage; 
     
 /** An implementation of the ADT Binary Search Tree.
@@ -21,7 +20,7 @@ public class BinarySearchTree<T extends Comparable<? super T>>
     } // end constructor
     
     
-    public void setTree(T rootData) // disable setTree (see Segment 25.6)
+    public void setTree(T rootData)
     {
         throw new UnsupportedOperationException();
     } // end setTree
@@ -47,12 +46,12 @@ public class BinarySearchTree<T extends Comparable<? super T>>
         {
             T rootEntry = rootNode.getData();
             if (entry.equals(rootEntry))
-                result = (T) rootEntry;
+                result = rootEntry;
             else if (entry.compareTo(rootEntry) < 0)
                 result = findEntry(rootNode.getLeftChild(), entry);
             else
                 result = findEntry(rootNode.getRightChild(), entry);
-        } // end if
+        }
         return result;
     } // end findEntry
     
@@ -73,9 +72,6 @@ public class BinarySearchTree<T extends Comparable<? super T>>
         return result;
     } // end add
     
-    /** Adds newEntry to the nonempty subtree rooted at rootNode. (non-recursive).
-        @param newEntry An item to add to the search tree.
-     */
     private T addEntry(T newEntry)
     {
         BinaryNode<T> currentNode = getRootNode();
@@ -90,8 +86,7 @@ public class BinarySearchTree<T extends Comparable<? super T>>
             int comparison = newEntry.compareTo(currentEntry);
             
             if (comparison == 0)
-            { // newEntry matches currentEntry;
-                // return and replace currentEntry
+            {
                 found = true;
                 result = currentEntry;
                 currentNode.setData(newEntry);
@@ -102,75 +97,63 @@ public class BinarySearchTree<T extends Comparable<? super T>>
                     currentNode = currentNode.getLeftChild();
                 else
                 {
-                    // Add node on the left side
                     found = true;
-                    
-                    // CHANGE THIS TO SET PARENT POINTERS AND FIX UP THREADS
-                    currentNode.setLeftChild(new BinaryNode<T>(newEntry));
 
-                } // end if
+                    BinaryNode<T> newNode = new BinaryNode<T>(newEntry);
+                    currentNode.setLeftChild(newNode);
+                    newNode.setParent(currentNode);
+
+                    // thread: successor is parent
+                    newNode.setThread(currentNode);
+                }
             }
             else
             {
-                assert comparison > 0;
                 if (currentNode.hasRightChild())
                     currentNode = currentNode.getRightChild();
                 else
                 {
-                    // Add node on the right side
                     found = true;
-                    
-                    // CHANGE THIS TO SET PARENT POINTERS AND FIX UP THREADS
-                    currentNode.setRightChild(new BinaryNode<T>(newEntry));
-                    
-                } // end if
-            } // end if
-        } // end while
-        
-    return result;
-    } // end addEntry
+
+                    BinaryNode<T> newNode = new BinaryNode<T>(newEntry);
+                    currentNode.setRightChild(newNode);
+                    newNode.setParent(currentNode);
+
+                    // thread: take parent's thread
+                    newNode.setThread(currentNode.getThread());
+                    currentNode.setThread(newNode);
+                }
+            }
+        }
+        return result;
+    }
   
     
-    
-    
-    
-    /** Removes entry from the search tree (non-recursive).
-     * @return The item if found, otherwise return null.
-     */
     public T remove(T entry)
     {
         T result = null;
-        boolean found = false;
-        // Locate node (and its parent) that contains a match for entry
         NodePair pair = findNode(entry);
         BinaryNode<T> currentNode = pair.getFirst();
         BinaryNode<T> parentNode = pair.getSecond();
         
-        if (currentNode != null) // Entry is found
+        if (currentNode != null)
         {
-            result = currentNode.getData(); // Get entry to be removed
-            // Case 1: currentNode has two children
+            result = currentNode.getData();
+
             if (currentNode.hasLeftChild() && currentNode.hasRightChild())
             {
-                // Replace entry in currentNode with the entry in another node
-                // that has at most one child; that node can be deleted
-                // Get node to remove (contains inorder predecessor; has at
-                // most one child) and its parent
                 pair = getNodeToRemove(currentNode);
                 BinaryNode<T> nodeToRemove = pair.getFirst();
                 parentNode = pair.getSecond();
-                // Copy entry from nodeToRemove to currentNode
+
                 currentNode.setData(nodeToRemove.getData());
                 currentNode = nodeToRemove;
-                // Assertion: currentNode is the node to be removed; it has at most one child
-                // Assertion: Case 1 has been transformed to Case 2
-            } // end if
+            }
             
-            // Case 2: currentNode has at most one child; delete it
             removeNode(currentNode, parentNode);
-        } // end if
+        }
         return result;
-    } // end remove
+    }
 
     
     private NodePair findNode(T entry)
@@ -186,16 +169,14 @@ public class BinarySearchTree<T extends Comparable<? super T>>
             T currentData = currentNode.getData();
             int comparison = entry.compareTo(currentData);
             
-            if (comparison == 0) // entry == current entry
-            {
+            if (comparison == 0)
                 found = true;
-            }
-            else if (comparison < 0) // entry < current entry
+            else if (comparison < 0)
             {
                 parentNode = currentNode;
                 currentNode = currentNode.getLeftChild();
             }
-            else // entry > root entry
+            else
             {
                 parentNode = currentNode;
                 currentNode = currentNode.getRightChild();
@@ -204,16 +185,13 @@ public class BinarySearchTree<T extends Comparable<? super T>>
 
         if (found)
             result = new NodePair(currentNode, parentNode);
-        // found entry is currentNode.getData()
+
         return result;
-    } // end findNode
+    }
 
     
     private NodePair getNodeToRemove(BinaryNode<T> currentNode)
     {
-        // Find the inorder predecessor by searching the left subtree;
-        // it will be the largest entry in the subtree, occurring
-        // in the node are far right as possible.
         BinaryNode<T> leftSubtreeRoot = currentNode.getLeftChild();
         BinaryNode<T> rightChild = leftSubtreeRoot;
         BinaryNode<T> priorNode = currentNode;
@@ -222,50 +200,42 @@ public class BinarySearchTree<T extends Comparable<? super T>>
         {
             priorNode = rightChild;
             rightChild = rightChild.getRightChild();
-        } // end while
+        }
         
-        // rightChild contains the inorder predecessor and is the node to
-        // remove; priorNode is its parent
         return new NodePair(rightChild, priorNode);
-    } // end getNodeToRemove
+    }
     
 
-    // Remove this node directly, it has at most 1 child
     private void removeNode(BinaryNode<T> nodeToRemove,
                             BinaryNode<T> parentNode)
     {
         BinaryNode<T> childNode;
 
         if (nodeToRemove.hasLeftChild())
-        {
             childNode = nodeToRemove.getLeftChild();
-        }
         else
-        {
             childNode = nodeToRemove.getRightChild();
-        }
-            
-        // Assertion: If nodeToRemove is a leaf, childNode is null
-        assert (nodeToRemove.isLeaf() && childNode == null) ||
-                !nodeToRemove.isLeaf();
         
         if (nodeToRemove == getRootNode())
         {
             setRootNode(childNode);
+            if (childNode != null)
+                childNode.setParent(null);
         }
         else if (parentNode.getLeftChild() == nodeToRemove)
         {
             parentNode.setLeftChild(childNode);
+            if (childNode != null)
+                childNode.setParent(parentNode);
         }
         else
         {
             parentNode.setRightChild(childNode);
+            if (childNode != null)
+                childNode.setParent(parentNode);
         }
-            
-    } // end removeNode
+    }
 
-    
-    
     
     private class NodePair
     {

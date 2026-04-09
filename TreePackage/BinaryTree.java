@@ -1,15 +1,9 @@
-
 package TreePackage;
 
-/**
- * An implementation of the ADT Binary Tree.
- * 
- */
 import java.util.*;
 
 public class BinaryTree<T> implements BinaryTreeInterface<T>
 {
-
     private BinaryNode<T> root;
 
     public BinaryTree() {
@@ -40,7 +34,8 @@ public class BinaryTree<T> implements BinaryTreeInterface<T>
 
         if ((leftTree != null) && !leftTree.isEmpty()) {
             root.setLeftChild(leftTree.root);
-            // ADD CODE TO SET THE PARENT AND THREAD OF THE LEFT CHILD
+            root.getLeftChild().setParent(root);
+            root.getLeftChild().linkSubtreeThreadOut(root);
         }
 
         if ((rightTree != null) && !rightTree.isEmpty()) {
@@ -49,10 +44,12 @@ public class BinaryTree<T> implements BinaryTreeInterface<T>
             } else {
                 root.setRightChild(rightTree.root.copy());
             }
-            // ADD CODE TO SET THE PARENT OF THE RiGHT CHILD
-            // SET THE THREAD OUT OF THE ROOT
 
-        } // end if
+            root.getRightChild().setParent(root);
+            root.setThread(root.getRightChild().getLeftmostInSubtree());
+        } else {
+            root.setThread(null);
+        }
 
         if ((leftTree != null) && (this != leftTree)) {
             leftTree.clear();
@@ -86,6 +83,9 @@ public class BinaryTree<T> implements BinaryTreeInterface<T>
 
     protected void setRootNode(BinaryNode<T> rootNode) {
         root = rootNode;
+        if (root != null) {
+            root.setParent(null);
+        }
     } // end setRootNode
 
     protected BinaryNode<T> getRootNode() {
@@ -93,7 +93,6 @@ public class BinaryTree<T> implements BinaryTreeInterface<T>
     } // end getRootNode
 
     public int getHeight() {
-        // Modified from Carrano to return 0 if the tree is empty
         if (root == null) {
             return 0;
         } else {
@@ -102,7 +101,6 @@ public class BinaryTree<T> implements BinaryTreeInterface<T>
     } // end getHeight
 
     public int getNumberOfNodes() {
-        // Modified from Carrano to return 0 if the tree is empty
         if (root == null) {
             return 0;
         } else {
@@ -119,64 +117,62 @@ public class BinaryTree<T> implements BinaryTreeInterface<T>
             inorderTraverse(node.getLeftChild());
             System.out.println(node.getData());
             inorderTraverse(node.getRightChild());
-        } // end if
+        }
     } // end inorderTraverse
 
-//      The inorder Iterator that uses the stack will be replaced
-//      by one that uses threads
     private class InorderIterator implements Iterator<T> {
 
-        private Stack<BinaryNode<T>> nodeStack;
         private BinaryNode<T> currentNode;
 
         public InorderIterator() {
-            nodeStack = new Stack<BinaryNode<T>>();
             currentNode = root;
-        } // end default constructor
+            if (currentNode != null) {
+                moveToFirstInorderNode();
+            }
+        }
+
+        private void moveToFirstInorderNode() {
+            while (currentNode.getLeftChild() != null) {
+                currentNode = currentNode.getLeftChild();
+            }
+        }
 
         public boolean hasNext() {
-            return !nodeStack.isEmpty() || (currentNode != null);
-        } // end hasNext
+            return currentNode != null;
+        }
 
         public T next() {
-            BinaryNode<T> nextNode = null;
-
-            // Find leftmost node with no left child
-            while (currentNode != null) {
-                nodeStack.push(currentNode);
-                currentNode = currentNode.getLeftChild();
-            } // end while
-
-            // Get leftmost node, then move to its right subtree
-            if (!nodeStack.isEmpty()) {
-                nextNode = nodeStack.pop();
-                assert nextNode != null; // Since nodeStack was not empty
-                // before the pop
-                currentNode = nextNode.getRightChild();
-            } else {
+            if (!hasNext()) {
                 throw new NoSuchElementException();
             }
 
-            return nextNode.getData();
-        } // end next
+            BinaryNode<T> nextNode = currentNode;
+            T result = nextNode.getData();
+
+            if (currentNode.hasThread()) {
+                currentNode = currentNode.getThread();
+            } else if (currentNode.getRightChild() != null) {
+                currentNode = currentNode.getRightChild();
+                while (currentNode.getLeftChild() != null) {
+                    currentNode = currentNode.getLeftChild();
+                }
+            } else {
+                currentNode = null;
+            }
+
+            return result;
+        }
 
         public void remove() {
             throw new UnsupportedOperationException();
-        } // end remove
+        }
 
     } // end InorderIterator
 
-    
-    /* Create an inorder iterator.
-     * @return The iterator.
-     */
     public Iterator<T> getInorderIterator() {
         return new InorderIterator();
     }
 
-    
-    
-    // Only the one iterator will be implemented by this code
     public Iterator<T> getPreorderIterator() {
         throw new RuntimeException("Pre order iterators not yet supported by this class");
     }
@@ -189,6 +185,7 @@ public class BinaryTree<T> implements BinaryTreeInterface<T>
         throw new RuntimeException("Level order iterators not yet supported by this class");
     }
 
-    // ADD IN METHODS FOR ACCESSING THE TREE
-
+    public BinaryNode<T> getRoot() {
+        return root;
+    }
 }
